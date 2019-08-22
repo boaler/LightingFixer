@@ -13,3 +13,4 @@ materials:
   - MAGMA_BLOCK
   - BREWING_STAND
   - DRAGON_EGG
+maxheight: 256

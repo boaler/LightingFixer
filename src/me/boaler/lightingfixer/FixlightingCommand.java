@@ -19,6 +19,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 public class FixlightingCommand implements CommandExecutor {
 	private LightingFixer plugin;
 	private ArrayList<Material> materials;
+	private int maxheight;
 	
 	public FixlightingCommand(LightingFixer plugin) {
 		this.plugin = plugin;
@@ -26,10 +27,10 @@ public class FixlightingCommand implements CommandExecutor {
 		
 		this.plugin.getCommand("fixlighting").setExecutor(this);
 		
-		loadMaterials();
+		loadConfig();
 	}
 	
-	public void loadMaterials() {
+	public void loadConfig() {
 		ArrayList<String> stringMaterials = new ArrayList<String>();
 		stringMaterials.addAll(plugin.getConfig().getStringList("materials"));
 		for(String string : stringMaterials) {
@@ -38,6 +39,8 @@ public class FixlightingCommand implements CommandExecutor {
 		}
 		System.out.println("[LightingFixer] Materials to change:" + materials);
 		stringMaterials = null;
+		
+		maxheight = plugin.getConfig().getInt("maxheight");
 	}
 	
 	@Override
@@ -49,7 +52,7 @@ public class FixlightingCommand implements CommandExecutor {
 				sender.sendMessage("§cYou don't have permissions to do that. ");
 				return true;
 			}
-			if(args.length == 0) {
+			if(args.length == 0 || args.length > 3) {
 				sender.sendMessage("§eLightingFixer Commands:\n"
 						+ "/fixlighting <minY> <maxY> [world]\n"
 						+ "/fixlighting reload");
@@ -57,6 +60,10 @@ public class FixlightingCommand implements CommandExecutor {
 			if(args.length == 1) {
 				if(args[0].equalsIgnoreCase("reload")) {
 					return handleReloadCommand(sender);
+				} else {
+					sender.sendMessage("§eLightingFixer Commands:\n"
+							+ "/fixlighting <minY> <maxY> [world]\n"
+							+ "/fixlighting reload");
 				}
 			}
 			if(args.length == 2) {
@@ -73,7 +80,7 @@ public class FixlightingCommand implements CommandExecutor {
 	public boolean handleReloadCommand(CommandSender sender) {
 		plugin.reloadConfig();
 		materials.clear();
-		loadMaterials();
+		loadConfig();
 		sender.sendMessage("§aLightingFixer config reloaded.");
 		return true;
 	}
@@ -83,6 +90,7 @@ public class FixlightingCommand implements CommandExecutor {
 			sender.sendMessage("§cYou have to specify a world from Console.");
 			return true;
 		}
+		
 		Player player = (Player) sender;
 		World world = player.getWorld();
 		int minY;
@@ -94,18 +102,23 @@ public class FixlightingCommand implements CommandExecutor {
 			player.sendMessage("§cError while loading coordinates.");
 			return true;
 		}
-		player.sendMessage("§eAttempting to fix lighting for world " + world.getName() + " for minY:" + minY + " maxY:" + maxY + ". This may take a long time!");
+		
 		return fixLighting(sender, world, minY, maxY);
 	}
 	
 	public boolean handleFixlightingCommand(CommandSender sender, String minimumY, String maximumY, String worldName) {
 		World world;
 		try {
+			if(Bukkit.getWorld(worldName) == null) {
+				sender.sendMessage("§cCan't find world " + worldName);
+				return true;
+			}
 			world = Bukkit.getWorld(worldName);
 		} catch(Exception e) {
 			sender.sendMessage("§cCan't find world " + worldName);
 			return true;
 		}
+		
 		int minY;
 		int maxY;
 		try {
@@ -115,13 +128,24 @@ public class FixlightingCommand implements CommandExecutor {
 			sender.sendMessage("§cError while loading coordinates.");
 			return true;
 		}
-		sender.sendMessage("§eAttempting to fix lighting for world " + worldName + " for minY:" + minY + " maxY:" + maxY + ". This may take a long time!");
+		
 		return fixLighting(sender, world, minY, maxY);
 	}
 	
 	public boolean fixLighting(CommandSender sender, World world, int minY, int maxY) {
 		//Creating a mashmap for the blocks changing
 		HashMap<Location, Material> blocks = new HashMap<Location, Material>();
+		
+		if(minY > maxY) {
+			sender.sendMessage("§cError: MinY can't be greater than MaxY!");
+			return true;
+		}
+		if((maxY - minY) > maxheight) {
+			sender.sendMessage("§cError: Maximum height of lighting fix: " + maxheight);
+			return true;
+		}
+
+		sender.sendMessage("§eAttempting to fix lighting for world " + world.getName() + " for minY:" + minY + " maxY:" + maxY + ". This may take a long time!");
 		
 		for (Chunk chunk : world.getLoadedChunks()) {
 			for(int x = 0; x < 16; x++){
