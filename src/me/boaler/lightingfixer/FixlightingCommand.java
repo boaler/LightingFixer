@@ -37,7 +37,7 @@ public class FixlightingCommand implements CommandExecutor {
 			Material temp = Material.getMaterial(string);
 			materials.add(temp);
 		}
-		System.out.println("[LightingFixer] Materials to change:" + materials);
+		Bukkit.getLogger().info("[LightingFixer] Materials to change:" + materials);
 		stringMaterials = null;
 		
 		maxheight = plugin.getConfig().getInt("maxheight");
@@ -153,7 +153,7 @@ public class FixlightingCommand implements CommandExecutor {
 		    		for(int z = 0; z< 16; z++) {
 		    			Block block = chunk.getBlock(x, y, z);
 		    			if(materials.contains(block.getType())) {
-		    				//Debug: System.out.println("Updating " + block);
+		    				//Debug: Bukkit.getLogger().info("Updating " + block);
 		    				blocks.put(block.getLocation(), block.getType());
 			    			block.setType(Material.STONE);
 		    			}
@@ -161,7 +161,7 @@ public class FixlightingCommand implements CommandExecutor {
 		    	}
 		    }
 		}
-		//Debug: System.out.println(blocks);
+		//Debug: Bukkit.getLogger().info(blocks);
 		new BukkitRunnable() {
 			public void run() {
 				for(Location loc : blocks.keySet()) {
